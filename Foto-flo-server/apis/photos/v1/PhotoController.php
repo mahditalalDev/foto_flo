@@ -94,7 +94,7 @@ class PhotoController
     
         try {
             // Initialize uploader with user directory
-            $uploader = new FileUploader(__DIR__ . '/../../../../uploads/' . $user_id . '/');
+            $uploader = new FileUploader(__DIR__ . '/../../../uploads/' . $user_id . '/');
             
             // Handle base64 upload
             $filePath = $uploader->handleBase64Upload($data['image']);
