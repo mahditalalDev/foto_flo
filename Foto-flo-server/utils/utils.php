@@ -33,7 +33,6 @@ class AuthHelper {
         return str_replace('Bearer ', '', $headers['Authorization'] ?? '');
     }
 }
-
 class FileUploader {
     private $uploadDir;
     private $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
@@ -43,35 +42,50 @@ class FileUploader {
         'image/gif' => 'gif'
     ];
 
-    public function __construct($uploadDir = __DIR__ . '/uploads/') {
+    public function __construct($uploadDir = '/var/www/html/foto_flo/Foto-flo-server/uploads/') {
+        // Always use absolute path for server environments
         $this->uploadDir = rtrim($uploadDir, '/') . '/';
+        
+        // Immediate directory check
+        if (!is_dir($this->uploadDir)) {
+            $this->ensureUploadDirExists();
+        }
     }
 
     public function handleBase64Upload($base64Data) {
-        // Parse and validate base64 data
-        $parsed = $this->parseBase64($base64Data);
-        $mimeType = $parsed['mime'];
-        $imageData = $parsed['data'];
+        try {
+            $parsed = $this->parseBase64($base64Data);
+            $mimeType = $parsed['mime'];
+            $imageData = $parsed['data'];
 
-        // Validate file type
-        if (!in_array($mimeType, $this->allowedTypes)) {
-            throw new Exception('Invalid file type: ' . $mimeType, 415);
+            if (!in_array($mimeType, $this->allowedTypes)) {
+                throw new Exception('Invalid file type: ' . $mimeType, 415);
+            }
+
+            $extension = $this->mimeMap[$mimeType];
+            $fileName = uniqid() . '.' . $extension;
+            $targetPath = $this->uploadDir . $fileName;
+
+            // Triple-check directory state
+            $this->ensureUploadDirExists(true); // Force recheck
+
+            // Atomic file write with error suppression
+            $bytesWritten = @file_put_contents($targetPath, $imageData);
+            if ($bytesWritten === false || $bytesWritten !== strlen($imageData)) {
+                throw new Exception('Failed to write image file. Check disk space and permissions.');
+            }
+
+            // Verify file was actually written
+            if (!file_exists($targetPath)) {
+                throw new Exception('File write verification failed');
+            }
+
+            return $targetPath; // Return full server path
+
+        } catch (Exception $e) {
+            error_log("Upload Error: " . $e->getMessage());
+            throw $e; // Re-throw for controller handling
         }
-
-        // Generate filename
-        $extension = $this->mimeMap[$mimeType];
-        $fileName = uniqid() . '.' . $extension;
-        $targetPath = $this->uploadDir . $fileName;
-
-        // Ensure directory exists
-        $this->ensureUploadDirExists();
-
-        // Save file
-        if (!file_put_contents($targetPath, $imageData)) {
-            throw new Exception('Failed to save image file');
-        }
-
-        return '/uploads/' . $fileName;
     }
 
     private function parseBase64($base64Data) {
@@ -97,14 +111,41 @@ class FileUploader {
         ];
     }
 
-    private function ensureUploadDirExists() {
+    private function ensureUploadDirExists($forceCheck = false) {
+        if ($forceCheck) clearstatcache(true, $this->uploadDir);
+
         if (!is_dir($this->uploadDir)) {
-            if (!mkdir($this->uploadDir, 0755, true)) {
-                throw new Exception('Failed to create upload directory');
+            $parentDir = dirname($this->uploadDir);
+            
+            // Verify parent directory permissions
+            if (!is_writable($parentDir)) {
+                error_log("Parent directory permissions: " . substr(sprintf('%o', fileperms($parentDir)), -4));
+                throw new Exception("Parent directory '$parentDir' not writable");
             }
+
+            // Create with race condition protection
+            if (!@mkdir($this->uploadDir, 0755, true)) {
+                $error = error_get_last();
+                
+                // Check if directory was created by concurrent process
+                if (!is_dir($this->uploadDir)) {
+                    throw new Exception("Directory creation failed: " . ($error['message'] ?? 'Unknown error'));
+                }
+            }
+
+            // Post-creation permission set
+            if (!chmod($this->uploadDir, 0755)) {
+                throw new Exception("Failed to set directory permissions");
+            }
+        }
+
+        // Final writable check
+        if (!is_writable($this->uploadDir)) {
+            throw new Exception("Directory exists but is not writable");
         }
     }
 }
+
 function processTags($tagsInput) {
     return array_filter(
         array_map('trim', explode(',', $tagsInput)),
