@@ -1,7 +1,7 @@
 <?php
-require '../../../models/Photo.php';
-require '../../../models/User.php';
-require '../../../utils/utils.php';
+require '../../models/Photo.php';
+require '../../models/User.php';
+require '../../utils/utils.php';
 
 class PhotoController
 {
