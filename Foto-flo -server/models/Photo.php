@@ -38,7 +38,7 @@ class Photo extends PhotoSkeleton
 
             foreach (self::$tags as $tag) {
                 $insertTagQuery->reset();
-                $selectTagQuery->reset(); 
+                $selectTagQuery->reset();
                 // validate tag if its empty
                 $tag = trim($tag);
                 if (empty($tag)) continue;
@@ -75,10 +75,16 @@ class Photo extends PhotoSkeleton
         $conn->begin_transaction();
         try {
             // 1. Update the photo
-            $query = $conn->prepare("
-            UPDATE photos SET  title =?, description =? WHERE photo_id =? AND user_id =?");
+            // 1. Update the photo and check affected rows
+            $query = $conn->prepare("UPDATE photos SET title=?, description=? 
+        WHERE photo_id=? AND user_id=?");
             $query->bind_param("ssii", $title, $description, $photo_id, $user_id);
             $query->execute();
+
+            $affectedRows = $conn->affected_rows;
+            if ($affectedRows === 0) {
+                throw new Exception('Photo not found or no permission', 404);
+            }
             // 2. Delete all existing tags
             $query = $conn->prepare("DELETE FROM phototags WHERE photo_id =?");
             $query->bind_param("i", $photo_id);
@@ -88,8 +94,8 @@ class Photo extends PhotoSkeleton
             $selectTagQuery = $conn->prepare("SELECT tag_id FROM tags WHERE tag_name = ?");
             $insertPhotoTagQuery = $conn->prepare("INSERT INTO phototags (photo_id, tag_id) VALUES (?, ?)");
             foreach ($tags as $tag) {
-                $insertTagQuery->reset(); // ← Add this
-                $selectTagQuery->reset(); // ← And this
+                $insertTagQuery->reset();
+                $selectTagQuery->reset();
                 //insert new tags
                 $tag = trim($tag);
                 if (empty($tag)) continue;
@@ -110,13 +116,26 @@ class Photo extends PhotoSkeleton
         } catch (Exception $e) {
             $conn->rollback();
             error_log("Update failed: " . $e->getMessage());
+            // Preserve error code if set, otherwise use 400
+            http_response_code($e->getCode() ?: 400);
             return false;
         }
+    }
+    public static function getById($photo_id, $user_id)
+    {
+        global $conn;
+        $query = $conn->prepare("SELECT * FROM photos 
+                           WHERE photo_id = ? AND user_id = ?");
+        $query->bind_param("ii", $photo_id, $user_id);
+        $query->execute();
+        $result = $query->get_result();
+        return $result->fetch_assoc();
     }
     public static function delete($photo_id, $user_id)
     {
         global $conn;
         $conn->begin_transaction();
+        echo "deleting " . $photo_id . "and " . $user_id;
 
         try {
             // 1. Delete photo-tag relationships

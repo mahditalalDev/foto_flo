@@ -6,8 +6,7 @@ class PhotoSkeleton{
     public static $description;
     public static $image_url;
     public static $tags = [];
-    public static function create($photo_id , $user_id , $title , $description , $image_url , $tags ) {
-        self::$photo_id = $photo_id;
+    public static function create($user_id , $title , $description , $image_url , $tags ) {
         self::$user_id = $user_id;
         self::$title = $title;
         self::$description = $description;

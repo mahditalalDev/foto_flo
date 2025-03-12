@@ -6,11 +6,13 @@ header("Content-Type: application/json; charset=UTF-8");
 
 require '../../../models/User.php';
 
-class AuthController {
+class AuthController
+{
 
-    public static function handleRequest() {
+    public static function handleRequest()
+    {
         $method = $_SERVER['REQUEST_METHOD'];
-        
+
         if ($method === 'OPTIONS') {
             http_response_code(200);
             exit();
@@ -18,7 +20,7 @@ class AuthController {
 
         $action = $_GET['action'] ?? '';
 
-        switch($action) {
+        switch ($action) {
             case 'register':
                 self::register();
                 break;
@@ -34,21 +36,22 @@ class AuthController {
         }
     }
 
-    private static function register() {
+    private static function register()
+    {
         $data = json_decode(file_get_contents('php://input'), true);
-    
+
         // Validate input
         if (empty($data['username']) || empty($data['email']) || empty($data['password'])) {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => 'All fields are required']);
             return;
         }
-    
+
         try {
             // Create and save user
             User::create($data['username'], $data['email'], $data['password']);
             $user_id = User::save();
-    
+
             if ($user_id) {
                 $token = User::createToken($user_id);
                 echo json_encode([
@@ -59,7 +62,7 @@ class AuthController {
             }
         } catch (Exception $e) {
             http_response_code(500);
-    
+
             // Detect duplicate error 
             if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
                 echo json_encode(['success' => false, 'error' => 'Email or username already exists']);
@@ -68,25 +71,26 @@ class AuthController {
             }
         }
     }
-    
-    
-    
 
-    private static function login() {
+
+
+
+    private static function login()
+    {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if(empty($data['email']) || empty($data['password'])) {
+        if (empty($data['email']) || empty($data['password'])) {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => 'Email and password required']);
             return;
         }
 
-    
+
 
         try {
             $user = User::login($data['email'], $data['password']);
-            
-            if($user) {
+
+            if ($user) {
                 $token = User::createToken($user['user_id']);
                 echo json_encode([
                     'success' => true,
@@ -97,19 +101,20 @@ class AuthController {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => 'Invalid credentials']);
             }
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Login failed']);
         }
     }
 
-    private static function validateToken() {
+    private static function validateToken()
+    {
         $headers = getallheaders();
-        $token = isset($headers['Authorization']) 
-               ? trim(str_replace('Bearer ', '', $headers['Authorization'])) 
-               : null;
+        $token = isset($headers['Authorization'])
+            ? trim(str_replace('Bearer ', '', $headers['Authorization']))
+            : null;
 
-        if(!$token) {
+        if (!$token) {
             http_response_code(401);
             echo json_encode(['success' => false, 'error' => 'Authorization token required']);
             return;
@@ -117,8 +122,8 @@ class AuthController {
 
         try {
             $user = User::validateToken($token);
-            
-            if($user) {
+
+            if ($user) {
                 echo json_encode([
                     'success' => true,
                     'user' => [
@@ -131,7 +136,7 @@ class AuthController {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => 'Invalid token']);
             }
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Token validation failed']);
         }

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photo Upload Test</title>
+</head>
+<body>
+    <h1>Test Photo Upload</h1>
+    
+    <form id="uploadForm">
+        <div>
+            <label>JWT Token: </label>
+            <input type="text" id="authToken" required style="width: 400px;">
+        </div>
+        <div>
+            <label>Image: </label>
+            <input type="file" id="image" required accept="image/*">
+        </div>
+        <div>
+            <label>Title: </label>
+            <input type="text" id="title">
+        </div>
+        <div>
+            <label>Description: </label>
+            <textarea id="description"></textarea>
+        </div>
+        <div>
+            <label>Tags (comma-separated): </label>
+            <input type="text" id="tags">
+        </div>
+        <button type="submit">Upload</button>
+    </form>
+
+    <div id="response" style="margin-top: 20px;"></div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = 'Uploading...';
+
+            try {
+                const fileInput = document.getElementById('image');
+                const file = fileInput.files[0];
+                
+                // Convert image to base64
+                const base64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result.split(',')[1]); // Remove data URL prefix
+                    reader.onerror = error => reject(error);
+                    reader.readAsDataURL(file);
+                });
+                return console.log(base64)
+
+                // Create JSON payload
+                const payload = {
+                    image: base64,
+                    title: document.getElementById('title').value,
+                    description: document.getElementById('description').value,
+                    tags: document.getElementById('tags').value
+                };
+
+                const response = await fetch('http://localhost/SEfactory/foto_flo/Foto-flo%20-server/apis/photos/v1/PhotoController.php?action=upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + document.getElementById('authToken').value,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                console.log(data);
+                
+                responseDiv.innerHTML = `
+                    <strong>Status:</strong> ${response.status}<br>
+                    <strong>Response:</strong> ${JSON.stringify(data, null, 2)}
+                `;
+                
+            } catch (error) {
+                responseDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
