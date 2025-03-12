@@ -1,7 +1,7 @@
 <?php
 $server = "localhost";
 $username = "root";
-$password = "";//localhost
+// $password = "";//localhost
 $password = "mahditalaldev";//server
 $dbname = "foto_flo";
 

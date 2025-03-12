@@ -43,7 +43,7 @@ class FileUploader {
         'image/gif' => 'gif'
     ];
 
-    public function __construct($uploadDir = __DIR__ . '/../uploads/') {
+    public function __construct($uploadDir = __DIR__ . '/uploads/') {
         $this->uploadDir = rtrim($uploadDir, '/') . '/';
     }
 
