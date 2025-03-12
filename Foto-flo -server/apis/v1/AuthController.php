@@ -4,7 +4,7 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Content-Type: application/json; charset=UTF-8");
 
-require '../../../models/User.php';
+require '../../models/User.php';
 
 class AuthController
 {
