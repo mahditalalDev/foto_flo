@@ -1,14 +1,20 @@
 import { useState } from "react";
 import Header from "./header/Header.jsx";
 import { Link } from "react-router-dom";
+import BASE_URL from "../Services/baseAPI.js";
+import { useSignup } from "./Hooks/useSignup.js";
 
 const Signup = () => {
+  const { signupUser } = useSignup();
+
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+  const baseapi = BASE_URL;
+  console.log(baseapi);
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -36,6 +42,7 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate(formData)) {
+      signupUser(formData);
       // todo: register new user with axios
     }
   };
