@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Header from "./header/Header";
+import Header from "./header/Header.jsx";
 import { Link } from "react-router-dom";
 
 const Signup = () => {
@@ -18,12 +18,26 @@ const Signup = () => {
     }));
   };
   const validate = (data) => {
-    console.log(data);
+    const { full_name, email, password, confirmPassword } = data;
+
+    // Check if any field is empty
+    if (!full_name || !email || !password || !confirmPassword) {
+      return false;
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    validate(formData);
+    if (validate(formData)) {
+      // todo: register new user with axios
+    }
   };
 
   return (
@@ -69,8 +83,10 @@ const Signup = () => {
           </button>
         </form>
         <div className="auth-links">
-                <Link to="/login" className="auth-link">Already have an account? Login </Link>
-            </div>
+          <Link to="/login" className="auth-link">
+            Already have an account? Login{" "}
+          </Link>
+        </div>
       </div>
     </div>
   );
