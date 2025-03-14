@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Content-Type: application/json; charset=UTF-8");
 
 require '../../models/User.php';
+require '../../utils/utils.php';
 
 class AuthController
 {
@@ -31,8 +32,7 @@ class AuthController
                 self::validateToken();
                 break;
             default:
-                http_response_code(404);
-                echo json_encode(['success' => false, 'error' => 'Endpoint not found']);
+                ResponseHelper::error("not found", '404');
         }
     }
 
@@ -42,9 +42,7 @@ class AuthController
 
         // Validate input
         if (empty($data['username']) || empty($data['email']) || empty($data['password'])) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'All fields are required']);
-            return;
+            ResponseHelper::send(false, "All fields are required", 400);
         }
 
         try {
@@ -54,20 +52,13 @@ class AuthController
 
             if ($user_id) {
                 $token = User::createToken($user_id);
-                echo json_encode([
-                    'success' => true,
-                    'user_id' => $user_id,
-                    'token' => $token
-                ]);
+                ResponseHelper::send(true, $token, 201);
             }
         } catch (Exception $e) {
-            http_response_code(500);
-
-            // Detect duplicate error 
             if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                echo json_encode(['success' => false, 'error' => 'Email or username already exists']);
+                ResponseHelper::send(false, "Email or userbame already exists", 400);
             } else {
-                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                ResponseHelper::send(false, "internal server error", 500);
             }
         }
     }
@@ -80,30 +71,19 @@ class AuthController
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (empty($data['email']) || empty($data['password'])) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Email and password required']);
-            return;
+            ResponseHelper::send(false, "email and password required", 200);
         }
-
-
-
         try {
             $user = User::login($data['email'], $data['password']);
 
             if ($user) {
                 $token = User::createToken($user['user_id']);
-                echo json_encode([
-                    'success' => true,
-                    'user_id' => $user['user_id'],
-                    'token' => $token
-                ]);
+                ResponseHelper::send(true, $token, 200);
             } else {
-                http_response_code(401);
-                echo json_encode(['success' => false, 'error' => 'Invalid credentials']);
+                ResponseHelper::send(false, "invalid credentials", 401);
             }
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Login failed']);
+            ResponseHelper::send(false, "internal server error", 500);
         }
     }
 
@@ -115,30 +95,27 @@ class AuthController
             : null;
 
         if (!$token) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Authorization token required']);
-            return;
+            ResponseHelper::send(false, "Authorization token required", 401); // Added semicolon
         }
 
         try {
             $user = User::validateToken($token);
 
             if ($user) {
-                echo json_encode([
+                $data = [
                     'success' => true,
                     'user' => [
                         'user_id' => $user['user_id'],
                         'username' => $user['username'],
                         'email' => $user['email']
                     ]
-                ]);
+                ];
+                ResponseHelper::send(true, $data, 200);
             } else {
-                http_response_code(401);
-                echo json_encode(['success' => false, 'error' => 'Invalid token']);
+                ResponseHelper::send(false, "invalid token", 401);
             }
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Token validation failed']);
+            ResponseHelper::send(false, "internal server error", 500);
         }
     }
 }

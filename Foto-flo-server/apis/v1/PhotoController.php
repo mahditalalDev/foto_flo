@@ -39,7 +39,7 @@ class PhotoController
     {
         $user_id = AuthHelper::authenticate();
         $photos = Photo::all($user_id);
-        ResponseHelper::send(true, $photos);
+        ResponseHelper::send(true, $photos,200);
     }
 
     static function updatePhoto()
