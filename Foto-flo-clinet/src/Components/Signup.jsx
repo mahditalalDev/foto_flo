@@ -1,68 +1,72 @@
 import { useState } from "react";
-import Header from "./header/Header.jsx";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import BASE_URL from "../Services/baseAPI.js";
-import { useSignup } from "./Hooks/useSignup.js";
+import Header from "./header/Header.jsx";
+import { validate } from "../common/validation.js";
+import axios from "axios";
 
 const Signup = () => {
-  const { signupUser } = useSignup();
-
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    full_name: "",
+    username: "",
     email: "",
     password: "",
-    confirmPassword: "",
   });
-  const baseapi = BASE_URL;
-  console.log(baseapi);
+  const [error, setError] = useState(null);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
   };
-  const validate = (data) => {
-    const { full_name, email, password, confirmPassword } = data;
-
-    // Check if any field is empty
-    if (!full_name || !email || !password || !confirmPassword) {
-      return false;
-    }
-
-    // Check if passwords match
-    if (password !== confirmPassword) {
-      return false;
-    }
-
-    return true;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate(formData)) {
-      signupUser(formData);
-      // todo: register new user with axios
+    setError(null); // Reset error message
+
+    if (!validate(formData)) {
+      setError("Please fill in all fields correctly");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost/SEfactory/foto_flo/Foto-flo-server/apis/v1/AuthController.php?action=register",
+        formData
+      );
+
+      if (response.data.success) {
+        localStorage.setItem("user_token", response.data.data);
+        navigate("/homepage");
+      } else {
+        setError(response.data.message || "Registration failed");
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Email or username is already registered"
+      );
     }
   };
 
   return (
     <div className="container">
       <Header />
+      {error && <div className="error-dialog">{error}</div>}
       <div className="auth-container">
         <h2 className="auth-title">Create Account</h2>
-        <form className="auth-form">
+        <form className="auth-form" onSubmit={handleSubmit}>
           <input
-            // type="text"
+            type="text"
             className="auth-input"
             placeholder="Full Name"
-            name="full_name"
-            value={formData.fullName}
+            name="username"
+            value={formData.username}
             onChange={handleChange}
           />
           <input
-            // type="email"
+            type="email"
             className="auth-input"
             placeholder="Email"
             name="email"
@@ -70,28 +74,21 @@ const Signup = () => {
             onChange={handleChange}
           />
           <input
-            // type="password"
+            type="password"
             className="auth-input"
             placeholder="Password"
             name="password"
             value={formData.password}
             onChange={handleChange}
           />
-          <input
-            // type="password"
-            className="auth-input"
-            placeholder="Confirm Password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-          />
-          <button className="auth-btn" onClick={handleSubmit}>
+
+          <button type="submit" className="auth-btn">
             Sign Up
           </button>
         </form>
         <div className="auth-links">
           <Link to="/login" className="auth-link">
-            Already have an account? Login{" "}
+            Already have an account? Login
           </Link>
         </div>
       </div>

@@ -93,8 +93,12 @@ class PhotoController
         }
     
         try {
-            // Initialize uploader with user directory
-            $uploader = new FileUploader(__DIR__ . '/uploads/' . $user_id . '/');
+            // Correct path construction (go up 3 levels from apis/v1 to reach project root)
+            $baseUploadPath = realpath(__DIR__ . '/../../') . '/uploads/';
+            $userUploadDir = $baseUploadPath . $user_id . '/';
+            
+            // Initialize uploader with corrected path
+            $uploader = new FileUploader($userUploadDir);
             
             // Handle base64 upload
             $filePath = $uploader->handleBase64Upload($data['image']);
@@ -117,7 +121,9 @@ class PhotoController
                 throw new Exception('Failed to save photo');
             }
     
-            ResponseHelper::send(true, ['photo_id' => $photo_id], 201);
+            // Return relative path for client use
+            $relativePath = str_replace($baseUploadPath, '/uploads/', $filePath);
+            ResponseHelper::send(true, ['photo_id' => $photo_id, 'path' => $relativePath], 201);
             
         } catch (Exception $e) {
             ResponseHelper::send(false, [

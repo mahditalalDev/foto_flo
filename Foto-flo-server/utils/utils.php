@@ -4,22 +4,27 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header("Access-Control-Allow-Methods: POST, GET, PUT, DELETE, OPTIONS");
 header("Content-Type: application/json; charset=UTF-8");
 
-class ResponseHelper {
-    public static function send($success, $data = null, $statusCode = 200) {
+class ResponseHelper
+{
+    public static function send($success, $data = null, $statusCode = 200)
+    {
         http_response_code($statusCode);
         echo json_encode(['success' => $success, 'data' => $data]);
         exit;
     }
 
-    public static function error($message, $statusCode = 500) {
+    public static function error($message, $statusCode = 500)
+    {
         http_response_code($statusCode);
         echo json_encode(['success' => false, 'error' => $message]);
         exit;
     }
 }
 
-class AuthHelper {
-    public static function authenticate() {
+class AuthHelper
+{
+    public static function authenticate()
+    {
         $token = self::getAuthToken();
         $user = User::validateToken($token);
         if (!$user) {
@@ -28,31 +33,69 @@ class AuthHelper {
         return $user['user_id'];
     }
 
-    private static function getAuthToken() {
+    private static function getAuthToken()
+    {
         $headers = getallheaders();
         return str_replace('Bearer ', '', $headers['Authorization'] ?? '');
     }
 }
-class FileUploader {
+class FileUploader
+{
     private $uploadDir;
     private $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     private $mimeMap = [
         'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/gif' => 'gif'
+        'image/png'  => 'png',
+        'image/gif'  => 'gif'
     ];
 
-    public function __construct($uploadDir = '/var/www/html/foto_flo/Foto-flo-server/uploads/') {
-        // Always use absolute path for server environments
-        $this->uploadDir = rtrim($uploadDir, '/') . '/';
-        
-        // Immediate directory check
-        if (!is_dir($this->uploadDir)) {
-            $this->ensureUploadDirExists();
+    public function __construct($uploadDir)
+    {
+        // Normalize directory separators and resolve path
+        $this->uploadDir = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $uploadDir), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $this->ensureUploadDirExists();
+    }
+
+    private function ensureUploadDirExists()
+    {
+        if (is_dir($this->uploadDir) && is_writable($this->uploadDir)) {
+            return;
+        }
+
+        // Check parent directory chain
+        $parentDir = dirname($this->uploadDir);
+        $existingParent = $this->findExistingAncestor($parentDir);
+
+        if (!is_writable($existingParent)) {
+            throw new Exception("Parent directory '{$existingParent}' not writable");
+        }
+
+        // Create directory with proper permissions
+        $oldUmask = umask(0);
+        $created = mkdir($this->uploadDir, 0755, true);
+        umask($oldUmask);
+
+        if (!$created && !is_dir($this->uploadDir)) {
+            throw new Exception("Failed to create directory: " . error_get_last()['message']);
+        }
+
+        if (!is_writable($this->uploadDir)) {
+            throw new Exception("Directory created but not writable");
         }
     }
 
-    public function handleBase64Upload($base64Data) {
+    private function findExistingAncestor($path)
+    {
+        $current = rtrim($path, DIRECTORY_SEPARATOR);
+        while ($current !== '' && !is_dir($current)) {
+            $current = dirname($current);
+        }
+        return $current;
+    }
+
+
+    public function handleBase64Upload($base64Data)
+    {
         try {
             $parsed = $this->parseBase64($base64Data);
             $mimeType = $parsed['mime'];
@@ -88,7 +131,8 @@ class FileUploader {
         }
     }
 
-    private function parseBase64($base64Data) {
+    private function parseBase64($base64Data)
+    {
         // Handle data URI scheme
         if (preg_match('/^data:(image\/\w+);base64,/', $base64Data, $matches)) {
             return [
@@ -111,56 +155,61 @@ class FileUploader {
         ];
     }
 
-    private function ensureUploadDirExists($forceCheck = false) {
-        if ($forceCheck) clearstatcache(true, $this->uploadDir);
+    // private function ensureUploadDirExists($forceCheck = false) {
+    //     if ($forceCheck) clearstatcache(true, $this->uploadDir);
 
-        if (!is_dir($this->uploadDir)) {
-            $parentDir = dirname($this->uploadDir);
-            
-            // Verify parent directory permissions
-            if (!is_writable($parentDir)) {
-                error_log("Parent directory permissions: " . substr(sprintf('%o', fileperms($parentDir)), -4));
-                throw new Exception("Parent directory '$parentDir' not writable");
-            }
+    //     if (!is_dir($this->uploadDir)) {
+    //         $parentDir = dirname($this->uploadDir);
 
-            // Create with race condition protection
-            if (!@mkdir($this->uploadDir, 0755, true)) {
-                $error = error_get_last();
-                
-                // Check if directory was created by concurrent process
-                if (!is_dir($this->uploadDir)) {
-                    throw new Exception("Directory creation failed: " . ($error['message'] ?? 'Unknown error'));
-                }
-            }
+    //         // Verify parent directory permissions
+    //         if (!is_writable($parentDir)) {
+    //             error_log("Parent directory permissions: " . substr(sprintf('%o', fileperms($parentDir)), -4));
+    //             throw new Exception("Parent directory '$parentDir' not writable");
+    //         }
 
-            // Post-creation permission set
-            if (!chmod($this->uploadDir, 0755)) {
-                throw new Exception("Failed to set directory permissions");
-            }
-        }
+    //         // Create with race condition protection
+    //         if (!@mkdir($this->uploadDir, 0755, true)) {
+    //             $error = error_get_last();
 
-        // Final writable check
-        if (!is_writable($this->uploadDir)) {
-            throw new Exception("Directory exists but is not writable");
-        }
-    }
+    //             // Check if directory was created by concurrent process
+    //             if (!is_dir($this->uploadDir)) {
+    //                 throw new Exception("Directory creation failed: " . ($error['message'] ?? 'Unknown error'));
+    //             }
+    //         }
+
+    //         // Post-creation permission set
+    //         if (!chmod($this->uploadDir, 0755)) {
+    //             throw new Exception("Failed to set directory permissions");
+    //         }
+    //     }
+
+    //     // Final writable check
+    //     if (!is_writable($this->uploadDir)) {
+    //         throw new Exception("Directory exists but is not writable");
+    //     }
+    // }
 }
 
-function processTags($tagsInput) {
+function processTags($tagsInput)
+{
     return array_filter(
         array_map('trim', explode(',', $tagsInput)),
-        function($tag) { return !empty($tag); }
+        function ($tag) {
+            return !empty($tag);
+        }
     );
 }
 
-function getRequestData() {
+function getRequestData()
+{
     if ($_SERVER['CONTENT_TYPE'] === 'application/json') {
         return json_decode(file_get_contents('php://input'), true) ?? [];
     }
     return $_SERVER['REQUEST_METHOD'] === 'GET' ? $_GET : $_POST;
 }
 
-function handleOptionsRequest() {
+function handleOptionsRequest()
+{
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         http_response_code(200);
         exit;

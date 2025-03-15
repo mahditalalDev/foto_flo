@@ -31,6 +31,17 @@ body {
   cursor: pointer;
   font-weight: bold;
   transition: transform 0.3s;
+  margin-right: 10px;
+}
+.logout {
+  background-color: rgb(198, 79, 79);
+  color: #1a1a1a;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.3s;
 }
 
 .auth-container {
@@ -62,7 +73,8 @@ body {
   color: #fff;
 }
 
-.auth-btn {
+.auth-btn,
+.action-btn {
   background: #00ff88;
   color: #1a1a1a;
   padding: 12px;
@@ -71,6 +83,10 @@ body {
   cursor: pointer;
   font-weight: bold;
   transition: transform 0.3s;
+}
+.action-btn {
+  background-color: #444;
+  color: white;
 }
 
 .auth-btn:hover {
@@ -93,4 +109,140 @@ body {
 }
 h1 {
   color: whitesmoke;
+}
+
+.error-dialog {
+  padding: 15px;
+  margin: 20px;
+  background: #ffebee;
+  color: #b71c1c;
+  border-radius: 4px;
+  border: 1px solid #ffcdd2;
+}
+
+/* Search Bar */
+.search-filter {
+  display: flex;
+  justify-content: space-evenly;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.search-box,
+.tag-filter {
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: 2px solid #333;
+  background: #222;
+  color: #fff;
+}
+.search-box {
+  width: 100%;
+  flex-grow: 1;
+}
+.tools {
+  display: flex;
+  gap: 5px;
+}
+
+/* Modal Styles */
+.modal {
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #222;
+  padding: 30px;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 10px;
+  background: #333;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 8px;
+}
+.photo-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 25px;
+}
+
+
+.photo-card {
+  background: #222;
+  border-radius: 15px;
+  overflow: hidden;
+  transition: transform 0.3s;
+}
+
+
+.photo-img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-bottom: 2px solid #333;
+}
+
+.photo-info {
+  padding: 15px;
+}
+
+.photo-title {
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+.photo-description {
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tag {
+  background: #333;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.8em;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+  border-top: 2px solid #333;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  color: #00ff88;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.action-btn:hover {
+  opacity: 0.8;
 }
